@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "UserEvent",
+  "namespace": "com.example",
+  "doc": "Événement utilisateur V1",
+  "fields": [
+    {"name": "user_id", "type": "string"},
+    {
+      "name": "event_type",
+      "type": {
+        "type": "enum",
+        "name": "EventType",
+        "symbols": ["LOGIN", "LOGOUT", "CLICK", "PURCHASE", "VIEW"]
+      }
+    },
+    {"name": "event_timestamp", "type": "long", "logicalType": "timestamp-millis"},
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "record",
+        "name": "Metadata",
+        "fields": [
+          {"name": "page", "type": ["null", "string"], "default": null},
+          {"name": "product_id", "type": ["null", "string"], "default": null},
+          {"name": "device", "type": ["null", "string"], "default": null},
+          {"name": "location", "type": ["null", "string"], "default": null}
+        ]
+      }],
+      "default": null
+    }
+  ]
+}
