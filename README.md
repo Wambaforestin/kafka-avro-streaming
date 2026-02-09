@@ -1,52 +1,151 @@
-# Kafka Avro Project
+# Visualisation des données en streaming
 
 ## Objectif
-Système de streaming de données avec Kafka et Avro pour produire et consommer des événements utilisateur avec gestion de schémas.
+Ce projet illustre une architecture complète de traitement de données en streaming avec Kafka, Avro, MongoDB et visualisation en temps réel. Il démontre la gestion de l'évolution des schémas Avro et le traitement de flux d'événements utilisateur.
 
 ## Technologies
-- **Apache Kafka** : Plateforme de streaming
-- **Avro** : Sérialisation de données
-- **Schema Registry** : Gestion et évolution des schémas
-- **Python 3.12+** : Langage de développement
-- **UV** : Gestionnaire de dépendances Python
+- **Kafka 7.5.0** : Broker de messages pour le streaming
+- **Schema Registry 7.5.0** : Gestion des schémas Avro et évolution
+- **MongoDB** : Base de données NoSQL pour le stockage des événements
+- **Mongo Express** : Interface web pour MongoDB
+- **Streamlit** : Dashboard de visualisation temps réel
+- **Plotly** : Bibliothèque de visualisations interactives
+- **Python 3.12** : Langage de développement
+- **UV** : Gestionnaire de packages Python moderne
+
+## Architecture
+
+Le projet suit un pipeline de données en streaming :
+
+```
+Producer → Kafka → Consumer → MongoDB → Dashboard
+```
+
+1. **Producer** : Génère des événements utilisateur aléatoires (70% schéma V2, 30% schéma V1)
+2. **Kafka** : Achemine les messages avec sérialisation Avro
+3. **Consumer** : Consomme les messages et les stocke dans MongoDB
+4. **MongoDB** : Stocke les événements avec enrichissement (timestamp, version)
+5. **Dashboard** : Visualise les données en temps réel avec Streamlit et Plotly
 
 ## Installation
 
-### 1. Installer UV
+### 1. Installer UV (si pas déjà installé)
 ```bash
-# Windows (PowerShell)
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Linux/macOS
-curl -LsSf https://astral.sh/uv/install.sh | sh
+pip install uv
 ```
 
-### 2. Cloner et configurer le projet
+### 2. Synchroniser les dépendances
 ```bash
-cd kafka-avro-project
 uv sync
 ```
 
-### 3. Démarrer l'infrastructure Kafka
+### 3. Démarrer l'infrastructure Docker
 ```bash
 docker-compose up -d
 ```
 
-Vérifier que les services sont actifs :
-- Kafka : `localhost:9092`
-- Schema Registry : `localhost:8081`
-- Zookeeper : `localhost:2181`
+Cette commande démarre :
+- Zookeeper (port 2181)
+- Kafka Broker (port 9092)
+- Schema Registry (port 8081)
+- MongoDB (port 27017)
+- Mongo Express (port 8082)
+- Dashboard Streamlit (port 8501)
 
-## Utilisation
+## Usage
 
-### Produire des événements
+### 1. Lancer le producteur
+Génère des événements utilisateur en continu (toutes les 2 secondes) :
 ```bash
 uv run producer.py
 ```
 
-### Consommer des événements
+### 2. Lancer le consommateur
+Consomme les événements et les stocke dans MongoDB :
 ```bash
 uv run consumer.py
+```
+
+### 3. Accéder au dashboard
+Ouvrez votre navigateur à l'adresse :
+```
+http://localhost:8501
+```
+
+Le dashboard affiche :
+- **4 KPIs** : Total événements, utilisateurs uniques, adoption V2, action principale
+- **4 visualisations** : Volume temporel, répartition par type, navigateurs, appareils
+- **Auto-refresh** : Option pour actualiser automatiquement toutes les 5 secondes
+
+### 4. Accéder à Mongo Express
+Interface web pour explorer MongoDB :
+```
+http://localhost:8082
+```
+
+## Évolution des schémas
+
+Le projet illustre l'évolution de schémas Avro :
+
+- **V1** : `user_id`, `event_type`, `event_timestamp`, `metadata` (device, location)
+- **V2** : V1 + champ `browser` (optionnel pour rétrocompatibilité)
+
+Le producteur génère 70% d'événements V2 et 30% d'événements V1.
+Le consommateur détecte automatiquement la version et l'ajoute aux documents MongoDB.
+
+## Structure des données MongoDB
+
+Base de données : `streaming_db`
+Collection : `events`
+
+Structure d'un document :
+```json
+{
+  "user_id": "user_3",
+  "event_type": "CLICK",
+  "event_timestamp": 1738800123456,
+  "metadata": {
+    "device": "mobile",
+    "location": "Paris"
+  },
+  "browser": "Chrome",
+  "received_at": "2026-02-09T14:30:23.456Z",
+  "schema_version": "v2"
+}
+```
+
+## Commandes utiles
+
+### Voir les logs d'un service
+```bash
+docker-compose logs -f [service-name]
+# Exemples : kafka, mongodb, dashboard
+```
+
+### Vérifier le statut des services
+```bash
+docker-compose ps
+```
+
+### Compter les événements dans MongoDB
+```bash
+docker exec mongodb mongosh streaming_db --eval "db.events.countDocuments({})"
+```
+
+### Arrêter tous les services
+```bash
+docker-compose down
+```
+
+### Supprimer les volumes (données persistantes)
+```bash
+docker-compose down -v
+```
+
+### Reconstruire le dashboard après modification
+```bash
+docker-compose build dashboard
+docker-compose up -d dashboard
 ```
 
 ## Schémas Avro

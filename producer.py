@@ -43,8 +43,8 @@ def main():
     devices = ["mobile", "desktop", "tablet"]
     locations = ["Paris", "London", "New York", "Tokyo", "Berlin"]
     
-    print("\n🚀 Producteur démarré - Génération continue d'événements")
-    print("📊 70% Schéma V2 (avec browser) | 30% Schéma V1 (sans browser)")
+    print("\nProducteur démarré - Génération continue d'événements")
+    print("70% Schéma V2 (avec browser) | 30% Schéma V1 (sans browser)")
     print("Ctrl+C pour arrêter\n")
     print("=" * 60)
 

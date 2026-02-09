@@ -58,12 +58,12 @@ def main():
         db = mongo_client[DB_NAME]
         collection = db[COLLECTION_NAME]
     except Exception as e:
-        print(f"❌ Erreur de connexion MongoDB: {e}")
-        print("💡 Vérifiez que MongoDB est démarré: docker-compose ps")
+        print(f"Erreur de connexion MongoDB: {e}")
+        print("Vérifiez que MongoDB est démarré: docker-compose ps")
         return
     
-    print(f"✓ Connecté à MongoDB: {DB_NAME}.{COLLECTION_NAME}")
-    print(f"✓ En attente de messages sur le topic {TOPIC}...")
+    print(f"Connecté à MongoDB: {DB_NAME}.{COLLECTION_NAME}")
+    print(f"En attente de messages sur le topic {TOPIC}...")
     print("=" * 60)
 
     try:
@@ -72,7 +72,7 @@ def main():
             if msg is None:
                 continue
             if msg.error():
-                print(f"❌ Erreur consommateur: {msg.error()}")
+                print(f"Erreur consommateur: {msg.error()}")
                 continue
 
             # ====================================

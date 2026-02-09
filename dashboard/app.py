@@ -10,7 +10,6 @@ import time
 # Configuration Page
 st.set_page_config(
     page_title="Kafka Analytics",
-    page_icon="📊",
     layout="wide"
 )
 
@@ -42,7 +41,7 @@ def get_data():
     return pd.DataFrame()
 
 # Header
-st.markdown("# 📊 Kafka-Avro Dashboard")
+st.markdown("# Kafka-Avro Dashboard")
 st.markdown("**Real-time Event Stream Analytics**")
 st.markdown("---")
 
@@ -50,27 +49,27 @@ st.markdown("---")
 df = get_data()
 
 if df.empty:
-    st.warning("⚠️ Aucune donnée. Lancez le producer et consumer.")
+    st.warning("Aucune donnée. Lancez le producer et consumer.")
     st.stop()
 
 # KPIs
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("📈 Total Événements", f"{len(df):,}")
+    st.metric("Total Événements", f"{len(df):,}")
 
 with col2:
     unique_users = df['user_id'].nunique() if 'user_id' in df.columns else 0
-    st.metric("👥 Utilisateurs Uniques", unique_users)
+    st.metric("Utilisateurs Uniques", unique_users)
 
 with col3:
     v2_pct = (len(df[df['schema_version'] == 'v2']) / len(df) * 100) if len(df) > 0 else 0
-    st.metric("🔄 Adoption V2", f"{v2_pct:.1f}%")
+    st.metric("Adoption V2", f"{v2_pct:.1f}%")
 
 with col4:
     if 'event_type' in df.columns:
         peak = df['event_type'].mode()[0] if len(df) > 0 else "N/A"
-        st.metric("🔥 Action Principale", peak)
+        st.metric("Action Principale", peak)
 
 st.markdown("---")
 
@@ -78,7 +77,7 @@ st.markdown("---")
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.subheader("📈 Événements par Minute")
+    st.subheader("Événements par Minute")
     if 'received_at' in df.columns:
         df_time = df.copy()
         df_time['minute'] = df_time['received_at'].dt.floor('1min')
@@ -90,7 +89,7 @@ with col_left:
         st.plotly_chart(fig, use_container_width=True)
 
 with col_right:
-    st.subheader("🥧 Types d'Événements")
+    st.subheader("Types d'Événements")
     if 'event_type' in df.columns:
         event_counts = df['event_type'].value_counts().reset_index()
         event_counts.columns = ['Type', 'Count']
@@ -103,7 +102,7 @@ st.markdown("---")
 col_left2, col_right2 = st.columns(2)
 
 with col_left2:
-    st.subheader("🌐 Browsers (V2 vs V1)")
+    st.subheader("Browsers (V2 vs V1)")
     if 'browser' in df.columns:
         browser_data = df.copy()
         browser_data['browser_display'] = browser_data['browser'].fillna('V1 (sans browser)')
@@ -115,7 +114,7 @@ with col_left2:
         st.plotly_chart(fig, use_container_width=True)
 
 with col_right2:
-    st.subheader("💻 Devices")
+    st.subheader("Devices")
     if 'metadata' in df.columns:
         devices = df['metadata'].apply(lambda x: x.get('device') if isinstance(x, dict) else None)
         devices = devices.dropna()
@@ -131,7 +130,7 @@ with col_right2:
 st.markdown("---")
 
 # Tableau
-st.subheader("📋 Derniers Événements")
+st.subheader("Derniers Événements")
 display_cols = ['user_id', 'event_type', 'schema_version', 'received_at']
 if 'browser' in df.columns:
     display_cols.append('browser')
@@ -145,6 +144,6 @@ if 'received_at' in recent.columns:
 st.dataframe(recent, use_container_width=True)
 
 # Auto-refresh
-if st.sidebar.checkbox("🔄 Auto-refresh (5s)", value=False):
+if st.sidebar.checkbox("Auto-refresh (5s)", value=False):
     time.sleep(5)
     st.rerun()
