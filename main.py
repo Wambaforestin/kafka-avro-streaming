@@ -1,5 +1,5 @@
 def main():
-    print("Mon kafka-avro-project!")
+    print("Architectures de Données en Streaming - Kafka-Avro Project")
 
 
 if __name__ == "__main__":

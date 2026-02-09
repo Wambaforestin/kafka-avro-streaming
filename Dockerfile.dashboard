@@ -1,3 +1,5 @@
+# Ce dockerfile est utilisé pour construire l'image du dashboard Streamlit qui visualise les données consommées depuis Kafka et stockées dans MongoDB. Il installe les dépendances nécessaires, copie le code du dashboard, et expose le port 8501 pour accéder à l'interface web de Streamlit.
+# J'ai décidé de conténeuriser le dashboard pour faciliter son déploiement et son exécution dans différents environnements sans se soucier des dépendances ou de la configuration locale. Tout comme les autres composants du projet, cela permet une meilleure portabilité et une isolation des environnements, garantissant que le dashboard fonctionne de manière cohérente partout où il est déployé.
 FROM python:3.12-slim
 
 WORKDIR /app

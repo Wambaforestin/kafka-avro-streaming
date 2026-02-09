@@ -37,6 +37,7 @@ def main():
     avro_serializer_v2 = AvroSerializer(schema_registry_client, schema_v2_str)
 
     # Données pour génération aléatoire
+    # génération de 10 utilisateurs, 5 types d'événements, 5 navigateurs, 3 types de devices et 5 localisations
     users = [f"user_{i}" for i in range(1, 11)]
     event_types = ["LOGIN", "CLICK", "LOGOUT", "PURCHASE", "VIEW"]
     browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"]
@@ -103,13 +104,13 @@ def main():
             # Affichage périodique
             if counter % 5 == 0:
                 producer.flush()
-                print(f"✅ {counter} événements envoyés...")
+                print(f"✓ {counter} événements envoyés...")
             
             # Pause entre les messages (2 secondes)
             time.sleep(2)
     
     except KeyboardInterrupt:
-        print("\n🛑 Arrêt du producteur...")
+        print("\n Arrêt du producteur...")
         producer.flush()
         print(f"✓ Total: {counter} événements envoyés")
 
