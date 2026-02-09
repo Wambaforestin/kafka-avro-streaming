@@ -110,7 +110,7 @@ def main():
             print(f"   Données: {user_event}")
 
     except KeyboardInterrupt:
-        print("\n🛑 Arrêt du consommateur...")
+        print("\n Arrêt du consommateur...")
     finally:
         consumer.close()
         mongo_client.close()

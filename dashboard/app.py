@@ -2,8 +2,6 @@ import streamlit as st
 import pymongo
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta, UTC
 import os
 import time
 
@@ -23,11 +21,6 @@ COLLECTION_NAME = 'events'
 def get_mongo_client():
     return pymongo.MongoClient(MONGO_URI)
 
-# Connexion MongoDB
-@st.cache_resource
-def get_mongo_client():
-    return pymongo.MongoClient(MONGO_URI)
-
 def get_data():
     client = get_mongo_client()
     collection = client[DB_NAME][COLLECTION_NAME]
@@ -41,8 +34,8 @@ def get_data():
     return pd.DataFrame()
 
 # Header
-st.markdown("# Kafka-Avro Dashboard")
-st.markdown("**Real-time Event Stream Analytics**")
+st.markdown("Architectures de Données en Streaming")
+st.markdown("**Visualisation en Temps Réel des Flux d'Événements**")
 st.markdown("---")
 
 # Récupération données
