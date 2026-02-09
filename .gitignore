@@ -45,3 +45,6 @@ uv.lock
 
 # Kafka/Docker
 docker-compose.override.yml
+
+# Rapport
+RAPPORT.md
