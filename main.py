@@ -1,5 +1,5 @@
 def main():
-    print("Hello from kafka-avro-project!")
+    print("Mon kafka-avro-project!")
 
 
 if __name__ == "__main__":
