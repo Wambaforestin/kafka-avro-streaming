@@ -1,7 +1,15 @@
 # Visualisation des données en streaming
 
+## Contexte
+Dans le cadre de mon apprentissage du domaine de la Data Engineering, j'ai réalisé ce projet pour illustrer trois concepts fondamentaux :
+- La **gestion des changements de schéma** (schema evolution)
+- Les **mécanismes de stockage de données** en streaming
+- La **visualisation en temps réel** avec des outils de visualisation interactifs
+
 ## Objectif
-Ce projet illustre une architecture complète de traitement de données en streaming avec Kafka, Avro, MongoDB et visualisation en temps réel. Il démontre la gestion de l'évolution des schémas Avro et le traitement de flux d'événements utilisateur.
+J'ai décidé de mettre en place une architecture simple de production, consommation et visualisation de données en streaming. Le but n'est pas de créer un système de production complexe, mais plutôt de comprendre comment ces concepts fonctionnent et interagissent ensemble.
+
+J'ai choisi de conteneuriser les trois composants centraux (Kafka, MongoDB et le Dashboard) pour faciliter le déploiement. Le producteur et le consommateur ne sont pas conteneurisés pour l'instant, mais une conteneurisation future serait nécessaire afin de garantir la portabilité de l'environnement.
 
 ## Technologies
 - **Kafka 7.5.0** : Broker de messages pour le streaming
@@ -15,17 +23,23 @@ Ce projet illustre une architecture complète de traitement de données en strea
 
 ## Architecture
 
-Le projet suit un pipeline de données en streaming :
+J'ai mis en place un pipeline simple de données en streaming :
 
 ```
 Producer → Kafka → Consumer → MongoDB → Dashboard
 ```
 
-1. **Producer** : Génère des événements utilisateur aléatoires (70% schéma V2, 30% schéma V1)
-2. **Kafka** : Achemine les messages avec sérialisation Avro
-3. **Consumer** : Consomme les messages et les stocke dans MongoDB
-4. **MongoDB** : Stocke les événements avec enrichissement (timestamp, version)
-5. **Dashboard** : Visualise les données en temps réel avec Streamlit et Plotly
+**Ce que fait chaque composant :**
+
+1. **Producer** (Python) : Génère des événements utilisateur simulés toutes les 2 secondes. J'ai implémenté deux versions de schéma (V1 et V2) pour démontrer l'évolution de schéma - 70% utilisent V2 et 30% utilisent V1.
+
+2. **Kafka** (Conteneurisé) : Achemine les messages entre le producteur et le consommateur. J'utilise Avro pour la sérialisation des données et Schema Registry pour gérer les versions de schémas.
+
+3. **Consumer** (Python) : Consomme les messages depuis Kafka et les stocke dans MongoDB. Il détecte automatiquement la version du schéma et enrichit les données avec un timestamp de réception.
+
+4. **MongoDB** (Conteneurisé) : Stocke les événements dans une base NoSQL. J'ai choisi MongoDB pour sa flexibilité avec des schémas évolutifs.
+
+5. **Dashboard** (Conteneurisé) : Visualise les données en temps réel avec Streamlit et Plotly. Il se rafraîchit automatiquement toutes les 5 secondes pour afficher les nouvelles données.
 
 ## Installation
 
