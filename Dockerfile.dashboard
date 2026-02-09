@@ -1,0 +1,17 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY pyproject.toml ./
+
+# Installer UV et les dépendances
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system streamlit pymongo confluent-kafka[schema-registry] plotly
+
+# Copier le code du dashboard
+COPY dashboard/ ./
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]

@@ -1,40 +1,141 @@
 version: '3'
+
 services:
+  # ====================================
+  # ZOOKEEPER - Coordination Kafka
+  # ====================================
+  # Gère la configuration et la synchronisation du cluster Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     hostname: zookeeper
     container_name: zookeeper
     ports:
-      - "2181:2181"
+      - "2181:2181"  # Port exposé sur l'hôte pour accès externe
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: 2181  # Port d'écoute pour les clients
+      ZOOKEEPER_TICK_TIME: 2000    # Intervalle de battement de cœur (ms)
+    networks:
+      - kafka-network
 
+  # ====================================
+  # KAFKA BROKER - Serveur de messages
+  # ====================================
+  # Stocke et distribue les messages entre producteurs et consommateurs
   broker:
     image: confluentinc/cp-kafka:7.5.0
     hostname: broker
     container_name: broker
     depends_on:
-      - zookeeper
+      - zookeeper  # Démarre après Zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9092"  # Port pour connexions depuis l'hôte (localhost)
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_BROKER_ID: 1  # Identifiant unique du broker
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'  # Connexion à Zookeeper
+      # Configuration des protocoles de communication
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # Deux listeners : broker:29092 (interne Docker) et localhost:9092 (externe)
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Pas de réplication (1 seul broker)
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # Démarrage immédiat
+    networks:
+      - kafka-network
 
+  # ====================================
+  # SCHEMA REGISTRY - Gestion des schémas Avro
+  # ====================================
+  # Stocke et valide les schémas Avro (V1, V2) pour assurer la compatibilité
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
     hostname: schema-registry
     container_name: schema-registry
     depends_on:
-      - broker
+      - broker  # Démarre après Kafka
     ports:
-      - "8081:8081"
+      - "8081:8081"  # API REST pour gérer les schémas
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      # Connexion au broker Kafka (via le réseau interne)
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081  # Écoute sur toutes les interfaces
+    networks:
+      - kafka-network
+
+  # ====================================
+  # MONGODB - Base de données NoSQL
+  # ====================================
+  # Stocke les événements consommés depuis Kafka
+  mongodb:
+    image: mongo:latest
+    hostname: mongodb
+    container_name: mongodb
+    ports:
+      - "27017:27017"  # Port standard MongoDB
+    environment:
+      # Pas d'authentification pour simplifier le développement
+      MONGO_INITDB_DATABASE: streaming_db
+    volumes:
+      # Volume persistant pour ne pas perdre les données au redémarrage
+      - mongodb_data:/data/db
+    networks:
+      - kafka-network
+
+  # ====================================
+  # MONGO EXPRESS - Interface web MongoDB
+  # ====================================
+  # Permet de visualiser et gérer la base MongoDB depuis le navigateur
+  mongo-express:
+    image: mongo-express:latest
+    hostname: mongo-express
+    container_name: mongo-express
+    depends_on:
+      - mongodb  # Démarre après MongoDB
+    ports:
+      - "8082:8081"  # Port 8082 sur l'hôte (8081 déjà pris par Schema Registry)
+    environment:
+      # Connexion sans authentification
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH: false  # Pas d'authentification HTTP basique
+    networks:
+      - kafka-network
+
+  # ====================================
+  # DASHBOARD - Application Streamlit
+  # ====================================
+  # Interface de visualisation en temps réel des événements stockés dans MongoDB
+  dashboard:
+    build:
+      context: .  # Construit l'image depuis le dossier actuel
+      dockerfile: Dockerfile.dashboard
+    hostname: dashboard
+    container_name: dashboard
+    depends_on:
+      - mongodb  # Attend MongoDB
+      - broker   # Attend Kafka (pour futures extensions)
+    ports:
+      - "8501:8501"  # Port standard Streamlit
+    environment:
+      # Variables d'environnement pour connexion aux services
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092  # Kafka via le réseau interne
+      MONGO_URI: mongodb://mongodb:27017/  # MongoDB sans auth
+    volumes:
+      # Monte le dossier dashboard pour hot-reload (modifications en temps réel)
+      - ./dashboard:/app
+    networks:
+      - kafka-network
+    command: streamlit run app.py --server.address=0.0.0.0
+
+# ====================================
+# RÉSEAU - Communication entre services
+# ====================================
+# Tous les conteneurs partagent le même réseau pour communiquer entre eux
+networks:
+  kafka-network:
+    driver: bridge  # Réseau virtuel Docker de type bridge
+
+# ====================================
+# VOLUMES - Persistance des données
+# ====================================
+# Volume nommé pour sauvegarder les données MongoDB
+volumes:
+  mongodb_data:

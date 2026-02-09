@@ -1,4 +1,5 @@
 import time
+import random
 from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -28,59 +29,89 @@ def main():
     producer_conf = {'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS}
     producer = Producer(producer_conf)
 
-    # --- PHASE 1 : Envoi avec Schéma V1 ---
-    print("\n--- Démarrage Phase 1 : Schéma V1 ---")
+    # 3. Chargement des schémas
     schema_v1_str = load_schema("user_event_v1.avsc")
-    
-    # Le sérialiseur Avro enregistre automatiquement le schéma s'il n'existe pas
-    avro_serializer_v1 = AvroSerializer(schema_registry_client, schema_v1_str)
-
-    event_v1 = {
-        "user_id": "user_123",
-        "event_type": "LOGIN",
-        "event_timestamp": int(time.time() * 1000),
-        "metadata": {
-            "device": "mobile",
-            "location": "Paris"
-        }
-    }
-
-    producer.produce(
-        topic=TOPIC,
-        key=StringSerializer()("user_123"),
-        value=avro_serializer_v1(event_v1, SerializationContext(TOPIC, MessageField.VALUE)),
-        on_delivery=delivery_report
-    )
-    producer.flush()
-    time.sleep(1)
-
-    # --- PHASE 2 : Évolution vers Schéma V2 ---
-    print("\n--- Démarrage Phase 2 : Évolution vers Schéma V2 (Ajout 'browser') ---")
     schema_v2_str = load_schema("user_event_v2.avsc")
     
-    # Nous utilisons un nouveau sérialiseur basé sur la V2
+    avro_serializer_v1 = AvroSerializer(schema_registry_client, schema_v1_str)
     avro_serializer_v2 = AvroSerializer(schema_registry_client, schema_v2_str)
 
-    event_v2 = {
-        "user_id": "user_456",
-        "event_type": "CLICK",
-        "event_timestamp": int(time.time() * 1000),
-        "metadata": {
-            "page": "/home",
-            "product_id": "prod_999"
-        },
-        "browser": "Chrome" # <--- Le nouveau champ !
-    }
+    # Données pour génération aléatoire
+    users = [f"user_{i}" for i in range(1, 11)]
+    event_types = ["LOGIN", "CLICK", "LOGOUT", "PURCHASE", "VIEW"]
+    browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"]
+    devices = ["mobile", "desktop", "tablet"]
+    locations = ["Paris", "London", "New York", "Tokyo", "Berlin"]
+    
+    print("\n🚀 Producteur démarré - Génération continue d'événements")
+    print("📊 70% Schéma V2 (avec browser) | 30% Schéma V1 (sans browser)")
+    print("Ctrl+C pour arrêter\n")
+    print("=" * 60)
 
-    producer.produce(
-        topic=TOPIC,
-        key=StringSerializer()("user_456"),
-        value=avro_serializer_v2(event_v2, SerializationContext(TOPIC, MessageField.VALUE)),
-        on_delivery=delivery_report
-    )
-    producer.flush()
-
-    print("Fin de la production.")
+    counter = 0
+    try:
+        while True:
+            counter += 1
+            user_id = random.choice(users)
+            event_type = random.choice(event_types)
+            
+            # 70% de chance d'utiliser V2, 30% V1
+            use_v2 = random.random() < 0.7
+            
+            if use_v2:
+                # Événement V2 avec browser
+                event = {
+                    "user_id": user_id,
+                    "event_type": event_type,
+                    "event_timestamp": int(time.time() * 1000),
+                    "metadata": {
+                        "device": random.choice(devices),
+                        "location": random.choice(locations)
+                    },
+                    "browser": random.choice(browsers)
+                }
+                
+                producer.produce(
+                    topic=TOPIC,
+                    key=StringSerializer()(user_id),
+                    value=avro_serializer_v2(event, SerializationContext(TOPIC, MessageField.VALUE)),
+                    on_delivery=delivery_report
+                )
+                schema_version = "V2"
+            else:
+                # Événement V1 sans browser
+                event = {
+                    "user_id": user_id,
+                    "event_type": event_type,
+                    "event_timestamp": int(time.time() * 1000),
+                    "metadata": {
+                        "device": random.choice(devices),
+                        "location": random.choice(locations)
+                    }
+                }
+                
+                producer.produce(
+                    topic=TOPIC,
+                    key=StringSerializer()(user_id),
+                    value=avro_serializer_v1(event, SerializationContext(TOPIC, MessageField.VALUE)),
+                    on_delivery=delivery_report
+                )
+                schema_version = "V1"
+            
+            producer.poll(0)
+            
+            # Affichage périodique
+            if counter % 5 == 0:
+                producer.flush()
+                print(f"✅ {counter} événements envoyés...")
+            
+            # Pause entre les messages (2 secondes)
+            time.sleep(2)
+    
+    except KeyboardInterrupt:
+        print("\n🛑 Arrêt du producteur...")
+        producer.flush()
+        print(f"✓ Total: {counter} événements envoyés")
 
 if __name__ == '__main__':
     main()
